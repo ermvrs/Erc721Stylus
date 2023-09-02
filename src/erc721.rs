@@ -1,7 +1,10 @@
 use alloc::{string::String, vec::Vec};
+use alloy_primitives::Bytes;
 use stylus_sdk::{
     alloy_primitives::{Address, U256},
     alloy_sol_types::{sol, SolError},
+    evm, msg,
+    prelude::*
 };
 use core::marker::PhantomData;
 
@@ -44,7 +47,15 @@ pub enum Erc721Error {
 // Internal methods
 impl<T: Erc721Params> Erc721<T> {
     pub fn _ownerOf(&self, tokenId: U256) -> Result<U256, Erc721Error> {
-        Ok(self.owners.tokenId)
+        let owners = self.owners.setter(tokenId);
+
+        Ok(owners.get())
+    }
+
+    pub fn _getApproved(&self, tokenId: U256) -> Result<Address, Erc721Error> {
+        let approvals = self.tokenApprovals.setter(tokenId);
+
+        Ok(approvals.get())
     }
 
     pub fn _requireMinted(&self, tokenId: U256) -> Result<(), Erc721Error> {
@@ -53,10 +64,12 @@ impl<T: Erc721Params> Erc721<T> {
                 tokenId
             }));
         }
+
+        Ok(())
     }
 
     pub fn _baseURI(&self) -> Result<String, Erc721Error> {
-        Ok("")
+        Ok(String::from(""))
     }
 
     pub fn _approve(&self, to: Address, tokenId: U256) -> Result<(), Erc721Error> {
@@ -74,6 +87,7 @@ impl<T: Erc721Params> Erc721<T> {
         evm::log(Approval { owner: msg::sender(), approved: to, tokenId } );
         Ok(())
     }
+
 }
 
 #[external]
@@ -84,7 +98,8 @@ impl<T: Erc721Params> Erc721<T> {
                 owner: address
             }));
         }
-        Ok(self.balances.get(address))
+        let balances = self.balances.setter(address);
+        Ok(balances.get())
     }
 
     pub fn ownerOf(&self, tokenId: U256) -> Result<Address, ERC721Error> {
@@ -111,10 +126,41 @@ impl<T: Erc721Params> Erc721<T> {
         let base_uri = self._baseURI()?;
         let token_uri = base_uri.push_str(tokenId.into());
         
-        OK(token_uri)
+        Ok(token_uri)
     }
 
     pub fn approve(&self, to: Address, tokenId: U256) -> Result<(), Erc721Error> {
+        self._approve(to, tokenId);
+        Ok(())
+    }
+
+    pub fn getApproved(&self, tokenId: U256) -> Result<Address, Erc721Error> {
+        self._requireMinted(tokenId)?;
+
+        let approver = self._getApproved(tokenId)?;
+
+        Ok(approver)
+    }
+
+    pub fn setApprovalForAll(&self, owner: Address, approved: bool) -> Result<(), Erc721Error> {
 
     }
+
+    pub fn isApprovedForAll(&self, owner: Address, operator: Address) -> Result<bool, Erc721Error> {
+
+    }
+
+    pub fn transferFrom(&self, from: Address, to: Address, tokenId: U256) -> Result<(), Erc721Error> {
+
+    }
+
+    pub fn safeTransferFrom(&self, from: Address, to: Address, tokenId: U256) -> Result<(), Erc721Error> {
+
+    }
+
+    pub fn safeTransferFrom(&self, from: Address, to: Address, tokenId: U256, data: Bytes) -> Result<(), Erc721Error> {
+
+    }
+
+    
 }
